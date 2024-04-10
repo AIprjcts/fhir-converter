@@ -1,37 +1,54 @@
 {
-"resourceType": "Bundle",
-"type": "collection",
-"entry":
-  {% for result in Results %}
-  - resource:
-    "resourceType": "Observation",
-    "id": "{{ result.Id.Value | to_json_string | generate_uuid }}",
-    "code":
-    "text": "{{ result.Name }}",
-    "coding":
-      {% for observation in result.Results %}
-        {% for nomenclature in Results[0].Results[0].NomenclatureIds %}
-        - "system": "{{ nomenclature.CodingScheme }}",
-        "code: {{ nomenclature.Value }}",
-        "display: {{ nomenclature.DisplayName }}"
-        {% endfor %}
-      {% endfor %}
-    "subject":
-    "reference": "Patient/{{ result.Results[0].ProviderId.Value }}",
-    "effectiveDateTime": "{{ result.Results[0].CollectedDate | date: "%Y-%m-%dT%H:%M:%SZ" }}",
-    "value[x]":
-    "value": "{{ result.Results[0].Measurement.NumericValue }}",
-    "unit": "{{ result.Results[0].Measurement.Units }}",
-    "text": "{{ result.Results[0].Measurement.PrintableString }}",
-    "system": "{{ Rresult.Results[0].Measurement.MeasurementSystem }}",
-    "interpretation":
-    {% if result.Results[0].IsAbnormal %}
-    - "coding":
-        - "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
-            "code": "A",
-            "display": "Abnormal"
-    {% endif %}
-    "referenceRange":
-    "text": "{{ result.Results[0].NormalRange }}"
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {% for result in Results %}
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "{{ result.Id.Value }}",
+        "code": {
+          "text": "{{ result.Name }}",
+          "coding": [
+            {% for observation in result.Results %}
+            {% for nomenclature in observation.NomenclatureIds %}
+            {
+              "system": "{{ nomenclature.CodingScheme }}",
+              "code": "{{ nomenclature.Value }}",
+              "display": "{{ nomenclature.DisplayName }}"
+            }{% unless forloop.last %},{% endunless %}
+            {% endfor %}
+            {% endfor %}
+          ]
+        },
+        "subject": {
+          "reference": "Patient/{{ result.Results[0].ProviderId.Value }}"
+        },
+        "effectiveDateTime": "{{ result.Results[0].CollectedDate | date: "%Y-%m-%dT%H:%M:%SZ" }}",
+        "value": {
+          "value": {{ result.Results[0].Measurement.NumericValue }},
+          "unit": "{{ result.Results[0].Measurement.Units }}",
+          "text": "{{ result.Results[0].Measurement.PrintableString }}",
+          "system": "{{ result.Results[0].Measurement.MeasurementSystem }}"
+        },
+        "interpretation": [
+          {% if result.Results[0].IsAbnormal %}
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "A",
+                "display": "Abnormal"
+              }
+            ]
+          }
+          {% endif %}
+        ],
+        "referenceRange": {
+          "text": "{{ result.Results[0].NormalRange }}"
+        }
+      }
+    }{% unless forloop.last %},{% endunless %}
     {% endfor %}
+  ]
 }
