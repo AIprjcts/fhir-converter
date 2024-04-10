@@ -22,6 +22,7 @@ from fhir_converter.renderers import (
     DataRenderer,
     RenderErrorHandler,
     Stu3FhirRenderer,
+    JsonFhirRenderer,
     make_environment,
     render_files_to_dir,
     render_to_dir,
@@ -34,12 +35,14 @@ class RenderSourceFormat(StrEnum):
 
     STU3 = "STU3"
     CCDA = "CCDA"
+    JSON = "JSON"
 
 
 render_map: Final[Mapping[RenderSourceFormat, Type[BaseFhirRenderer]]] = frozendict(
     {
         RenderSourceFormat.STU3: Stu3FhirRenderer,
         RenderSourceFormat.CCDA: CcdaRenderer,
+        RenderSourceFormat.JSON: JsonFhirRenderer,
     }
 )
 """Mapping[RenderSourceFormat, Type[BaseFhirRenderer]]: Source format to render mappings"""
@@ -140,6 +143,7 @@ def get_argparser(prog: Optional[str] = None) -> argparse.ArgumentParser:
 
                Consolidated CDA (.xml|.ccda) documents
                STU3 FHIR (.json) resources or bundles
+               Custon JSON (.json) reources or bundles with custom liquids templates
             """
             ).strip(),
             "    ",
@@ -182,7 +186,7 @@ def get_argparser(prog: Optional[str] = None) -> argparse.ArgumentParser:
         "--source-format",
         metavar="<RenderSourceFormat>",
         type=RenderSourceFormat,
-        help="The source format to render. aka STU3 or CCDA",
+        help="The source format to render. aka STU3,  CCDA, Custom JSON",
         required=True,
     )
     parser.add_argument(

@@ -62,6 +62,10 @@ stu3_default_loader: Final[PackageLoader] = PackageLoader(
 )
 """PackageLoader: The default loader for the stu3 templates"""
 
+json_default_loader: Final[PackageLoader] = PackageLoader(
+    package="fhir_converter.templates", package_path="json"
+)
+"""PackageLoader: The default loader for the custom json templates"""
 
 class FhirRendererDefaults(TypedDict):
     """The Renderer Defaults"""
@@ -247,6 +251,30 @@ class Stu3FhirRenderer(BaseFhirRenderer):
     @staticmethod
     def defaults() -> FhirRendererDefaults:
         return {"loader": stu3_default_loader}
+
+    def _render(
+        self, template_name: str, data_in: DataInput, encoding: str = "utf-8"
+    ) -> MutableMapping:
+        template = self.env.get_template(template_name)
+        return parse_fhir(
+            json_input=template.render(
+                {"msg": parse_json(data_in, encoding, ignore_empty_fields=False)}
+            ),
+        )
+
+
+
+class JsonFhirRenderer(BaseFhirRenderer):
+    """Custon JSON to Fhir renderer"""
+
+    __slots__ = "env"
+
+    def __init__(self, env: Optional[Environment] = None) -> None:
+        super().__init__(env)
+
+    @staticmethod
+    def defaults() -> FhirRendererDefaults:
+        return {"loader": json_default_loader}
 
     def _render(
         self, template_name: str, data_in: DataInput, encoding: str = "utf-8"
