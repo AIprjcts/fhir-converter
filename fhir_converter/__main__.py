@@ -143,7 +143,7 @@ def get_argparser(prog: Optional[str] = None) -> argparse.ArgumentParser:
 
                Consolidated CDA (.xml|.ccda) documents
                STU3 FHIR (.json) resources or bundles
-               Custon JSON (.json) reources or bundles with custom liquids templates
+               Custom JSON (.json) reources or bundles with custom liquids templates
             """
             ).strip(),
             "    ",
