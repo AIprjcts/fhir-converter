@@ -8,7 +8,7 @@
       "resource": {
         "resourceType": "ServiceRequest",
         "id": "{{ result.Id.Value }}",
-        "status": "active",
+        "status": "completed",
         "intent": "order",
         "code": {
           "text": "{{ result.Name }}"
@@ -16,24 +16,28 @@
         "subject": {
           "reference": "Patient/{{ result.Results[0].ProviderId.Value }}"
         },
-        "authoredOn": "{% if result.OrderDate %}{{ result.OrderDate | format_date_time }}{% endif %}",
-        "occurrenceDateTime": "{% if result.CollectedDate %}{{ result.CollectedDate | format_date_time }}{% endif %}",
+        "authoredOn": "{% if result.OrderDate %}{{ result.OrderDate | format_ts_as_date_time }}{% endif %}",
+        "occurrenceDateTime": "{% if result.CollectedDate %}{{ result.CollectedDate | format_ts_as_date_time }}{% endif %}",
         "orderDetail": [
           {
             "timing": {
-              "dateTime": "{% if result.OrderDatePart.DateTime %}{{ result.OrderDatePart.DateTime | format_date_time }}{% endif %}",
-              "date": "{% if result.OrderDatePart.Date %}{{ result.OrderDatePart.Date | format_date_time }}{% endif %}"
+              "dateTime": "{% if result.OrderDatePart.DateTime %}{{ result.OrderDatePart.DateTime | format_ts_as_date_time }}{% endif %}",
+              "date": "{% if result.OrderDatePart.Date %}{{ result.OrderDatePart.Date | format_ts_as_date_time }}{% endif %}"
             }
           }
         ],
-        "result": [
+        "entry": [
           {% for observation in result.Results %}
+          {% if observation.TypeName == "Result" %}
           {
             "resource": {
               "resourceType": "Observation",
               "id": "{{ observation.Id.Value }}",
               "code": {
                 "text": "{{ observation.Name }}"
+              },
+              "subject": {
+                "reference": "Patient/{{ result.Results[0].ProviderId.Value }}"
               },
               "valueQuantity": {
                 "value": {% if observation.Measurement.HasNumericValue %}{{ observation.Measurement.NumericValue }}{% else %}null{% endif %},
@@ -51,16 +55,40 @@
                       "display": "Abnormal"
                     }
                   ]
+                },
+                {% endif %}                
+                { 
+                  "text": "{{ observation.Description | json_escape }}"
                 }
-                {% endif %}
               ],
               "referenceRange": [
                 {
                   "text": "{{ observation.NormalRange }}"
+                  {% comment %}
+                    # Commented lines for check and review based on data
+                    "low": {
+                        "value": {% if observation.NormalRangeLow %}{{ observation.NormalRangeLow }}{% else %}null{% endif %},
+                        "unit": "{% if observation.Measurement.Units %}{{ observation.Measurement.Units }}{% endif %}",
+                        "system": "{{ observation.Measurement.MeasurementSystem }}",
+                        "code": "{{ observation.Measurement.Value }}"
+                    },
+                    "high": {
+                      "value": {% if observation.NormalRangeHigh %}{{ observation.NormalRangeHigh }}{% else %}null{% endif %},
+                      "unit": "{% if observation.Measurement.Units %}{{ observation.Measurement.Units }}{% endif %}",
+                      "system": "{{ observation.Measurement.MeasurementSystem }}",
+                      "code": "{{ observation.Measurement.Value }}"
+                    }
+                  {% endcomment %}  
                 }
+              ],             
+              "basedOn": [
+                {
+                  "reference": "ServiceRequest/{{ result.Id.Value }}"
+               }
               ]
             }
           }{% unless forloop.last %},{% endunless %}
+          {% endif %}
           {% endfor %}
         ]
       }

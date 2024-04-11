@@ -10,6 +10,7 @@ from typing import Any, Callable, Final, Iterable, List, Mapping, Sequence, Tupl
 from uuid import UUID
 from zlib import compress as z_compress
 
+import json
 from dateutil import parser
 from frozendict import frozendict
 from isodate import isotzinfo, parse_datetime
@@ -108,6 +109,14 @@ def mapping_filter(_filter: FilterT) -> FilterT:
 
     return wrapper
 
+@liquid_filter
+def json_escape(data: str) -> str:
+    """Escapes a string for safe inclusion in JSON."""
+    if is_undefined_none_or_blank(data):
+        return ""
+    # Use json.dumps to escape the string, then strip the quotes json.dumps adds
+    return json.dumps(data)[1:-1]
+
 
 @liquid_filter
 def to_json_string(obj: Any) -> str:
@@ -164,20 +173,26 @@ def format_as_date_time(dtm: str) -> str:
 
 
 @string_filter
-def format_date_time(value: str | int | float) -> str:
+def format_ts_as_date_time(value: str | int | float) -> str:
     """
-    Formats a date-time string or Unix timestamp as an ISO 8601 date-time string.
-    """
+    Formats a Unix timestamp as an ISO 8601 date-time string.
+    """    
+
     if is_undefined_none_or_blank(value):
         return ""
     
     try:
-        if isinstance(value, (int, float)):
+        if isinstance(value, (int, float)):            
             dt = datetime.fromtimestamp(value / 1000.0)
+            return dt.isoformat()            
         else:
-            dt = parser.parse(value)
-        return dt.isoformat()
+            print(type(value))
+            print(value)
+            dt = datetime.fromtimestamp(float(value) / 1000.0)                      
+            print("ok")
+            return dt.isoformat()
     except (ValueError, OverflowError):
+        print(f"Error: {ValueError}")
         return str(value)
 
 
@@ -373,7 +388,8 @@ all_filters: Sequence[Tuple[str, FilterT]] = [
     ("sha1_hash", sha1_hash),
     ("add_hyphens_date", add_hyphens_date),
     ("format_as_date_time", format_as_date_time),
-    ("format_date_time", format_date_time),
+    ("format_ts_as_date_time", format_ts_as_date_time),
+    ("json_escape", json_escape),
     ("now", now),
     ("date", date),
     ("generate_uuid", generate_uuid),
