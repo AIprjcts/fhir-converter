@@ -168,7 +168,7 @@ class BaseFhirRenderer(ABC):
             raise RenderingError("Failed to serialize FHIR", e)
 
     def render_to_fhir(
-        self, template_name: str, data_in: DataInput, encoding: str = "utf-16"
+        self, template_name: str, data_in: DataInput, encoding: str = "utf-8"
     ) -> MutableMapping:
         """render_to_fhir Renders the given data to FHIR
 

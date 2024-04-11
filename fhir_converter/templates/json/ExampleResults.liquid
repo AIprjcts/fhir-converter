@@ -2,53 +2,33 @@
   "resourceType": "Bundle",
   "type": "collection",
   "entry": [
-    {% for result in Results %}
+    {% for result in msg.Results %}
+    {% if result.TypeName == "Order" %}
     {
       "resource": {
-        "resourceType": "Observation",
+        "resourceType": "ServiceRequest",
         "id": "{{ result.Id.Value }}",
+        "status": "active",
+        "intent": "order",
         "code": {
-          "text": "{{ result.Name }}",
-          "coding": [
-            {% for observation in result.Results %}
-            {% for nomenclature in observation.NomenclatureIds %}
-            {
-              "system": "{{ nomenclature.CodingScheme }}",
-              "code": "{{ nomenclature.Value }}",
-              "display": "{{ nomenclature.DisplayName }}"
-            }{% unless forloop.last %},{% endunless %}
-            {% endfor %}
-            {% endfor %}
-          ]
+          "text": "{{ result.Name }}"
         },
         "subject": {
           "reference": "Patient/{{ result.Results[0].ProviderId.Value }}"
         },
-        "effectiveDateTime": "{{ result.Results[0].CollectedDate | date: "%Y-%m-%dT%H:%M:%SZ" }}",
-        "value": {
-          "value": {{ result.Results[0].Measurement.NumericValue }},
-          "unit": "{{ result.Results[0].Measurement.Units }}",
-          "text": "{{ result.Results[0].Measurement.PrintableString }}",
-          "system": "{{ result.Results[0].Measurement.MeasurementSystem }}"
-        },
-        "interpretation": [
-          {% if result.Results[0].IsAbnormal %}
+        "authoredOn": "{% if result.OrderDate %}{{ result.OrderDate |  format_date_time }}{% endif %}",
+        "occurrenceDateTime": "{% if result.CollectedDate %}{{ result.CollectedDate | format_date_time }}{% endif %}",
+        "orderDetail": [
           {
-            "coding": [
-              {
-                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
-                "code": "A",
-                "display": "Abnormal"
-              }
-            ]
+            "timing": {
+              "dateTime": "{% if result.OrderDatePart.DateTime %}{{ result.OrderDatePart.DateTime | format_date_time }}{% endif %}",
+              "date": "{% if result.OrderDatePart.Date %}{{ result.OrderDatePart.Date | format_date_time }}{% endif %}"
+            }
           }
-          {% endif %}
-        ],
-        "referenceRange": {
-          "text": "{{ result.Results[0].NormalRange }}"
-        }
+        ]
       }
     }{% unless forloop.last %},{% endunless %}
+    {% endif %}
     {% endfor %}
   ]
 }

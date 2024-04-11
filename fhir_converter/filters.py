@@ -1,3 +1,4 @@
+import logging
 from base64 import b64encode
 from datetime import datetime, timezone
 from functools import partial, wraps
@@ -34,6 +35,14 @@ from fhir_converter.hl7 import (
     to_fhir_dtm,
 )
 from fhir_converter.utils import is_undefined_none_or_blank, tail, to_list_or_empty
+
+
+logging.basicConfig(
+    filename='fhir_converter.log',
+    level=logging.DEBUG,
+    format='%(asctime)s %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 FilterT = Callable[..., Any]
 """Callable[..., Any]: A liquid filter function"""
@@ -152,6 +161,24 @@ def format_as_date_time(dtm: str) -> str:
     if is_undefined_none_or_blank(dtm):
         return ""
     return hl7_to_fhir_dtm(dtm)
+
+
+@string_filter
+def format_date_time(value: str | int | float) -> str:
+    """
+    Formats a date-time string or Unix timestamp as an ISO 8601 date-time string.
+    """
+    if is_undefined_none_or_blank(value):
+        return ""
+    
+    try:
+        if isinstance(value, (int, float)):
+            dt = datetime.fromtimestamp(value / 1000.0)
+        else:
+            dt = parser.parse(value)
+        return dt.isoformat()
+    except (ValueError, OverflowError):
+        return str(value)
 
 
 @string_filter
@@ -346,6 +373,7 @@ all_filters: Sequence[Tuple[str, FilterT]] = [
     ("sha1_hash", sha1_hash),
     ("add_hyphens_date", add_hyphens_date),
     ("format_as_date_time", format_as_date_time),
+    ("format_date_time", format_date_time),
     ("now", now),
     ("date", date),
     ("generate_uuid", generate_uuid),
