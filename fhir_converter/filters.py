@@ -1,4 +1,5 @@
 import logging
+
 from base64 import b64encode
 from datetime import datetime, timezone
 from functools import partial, wraps
@@ -12,6 +13,7 @@ from zlib import compress as z_compress
 
 import json
 from dateutil import parser
+from pytz import timezone as pytz_timezone
 from frozendict import frozendict
 from isodate import isotzinfo, parse_datetime
 from liquid import Environment
@@ -171,9 +173,8 @@ def format_as_date_time(dtm: str) -> str:
         return ""
     return hl7_to_fhir_dtm(dtm)
 
-
 @string_filter
-def format_ts_as_date_time(value: str | int | float) -> str:
+def format_ts_as_date_time(value: str | int | float, tz: str = 'America/New_York') -> str:
     """
     Formats a Unix timestamp as an ISO 8601 date-time string.
     """    
@@ -181,14 +182,17 @@ def format_ts_as_date_time(value: str | int | float) -> str:
     if is_undefined_none_or_blank(value):
         return ""
     
+    # Convert the timezone string to a timezone object
+    tz_info = pytz_timezone(tz)
+
     try:
         if isinstance(value, (int, float)):            
-            dt = datetime.fromtimestamp(value / 1000.0)
+            dt = datetime.fromtimestamp(value / 1000.0, tz=tz_info)
             return dt.isoformat()            
         else:
             print(type(value))
             print(value)
-            dt = datetime.fromtimestamp(float(value) / 1000.0)                      
+            dt = datetime.fromtimestamp(float(value) / 1000.0, tz=tz_info)                      
             print("ok")
             return dt.isoformat()
     except (ValueError, OverflowError):
